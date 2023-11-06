@@ -1,0 +1,393 @@
+syntax = "proto3";
+
+// Radio components registry
+
+package rcr;
+
+// import "google/api/annotations.proto";
+
+option cc_enable_arenas = true;
+option java_package = "com.commandus.rcr";
+
+// symbols: +, -, =
+message Operation
+{
+    uint64 id = 1;
+    string symbol = 2;
+    string description = 3;
+}
+
+message Symbol 
+{
+    uint64 id = 1;
+    string sym = 2;
+    string description = 3;
+    string unit = 4;
+    int32 pow10 = 5;                            ///< power of 10
+}
+
+message PropertyType
+{
+    uint64 id = 1;
+    string key = 2;
+    string description = 3;
+}
+
+message Property
+{
+    uint64 id = 1;
+    uint64 card_id = 2;
+    uint64 property_type_id = 3;
+    string value = 4;
+}
+
+message PropertyWithName
+{
+    uint64 id = 1;
+    string property_type = 2;
+    string value = 3;
+}
+
+message Package
+{
+    uint64 id = 1;
+    uint64 card_id = 2;
+    uint64 box = 3;                          ///< 4 * 2 bytes
+    uint64 qty = 4;
+    string box_name = 5;                     ///< for debug purposes only
+}
+
+message Box
+{
+    uint64 id = 1;                          ///< in chBox() reserved for '=' operation when a new box assigned
+    uint64 box_id = 2;
+    string name = 3;
+    string uname = 4;                       ///< uppercase name for search
+}
+
+message User
+{
+    uint64 id = 1;
+    uint64 token = 2;
+    string name = 3;
+    string password = 4;
+    uint32 rights = 5;      ///< 1- root, 0- ordinal user
+}
+
+message Group
+{
+    uint64 id = 1;
+    string name = 2;
+}
+
+message GroupUser
+{
+    uint64 id = 1;
+    uint64 group_id = 2;
+    uint64 user_id = 3;
+}
+
+message BoxGroup
+{
+    uint64 id = 1;
+    uint64 group_id = 2;
+    uint64 box_id = 3;
+}
+
+message Card
+{
+    uint64 id = 1;
+    string name = 2;
+    string uname = 3;   ///< uppercase name for search
+    uint64 symbol_id = 4;
+    uint64 nominal = 5;
+}
+
+message CardNPropetiesPackages
+{
+    Card card = 1;
+    repeated PropertyWithName properties = 2;
+    repeated Package packages = 3;
+}
+
+// Operation log
+message Journal
+{
+    uint64 id = 1;                              ///< identifier
+    uint64 dt = 2;                              ///< modification date & time
+    uint64 user_id = 3;                         ///< user name
+    uint64 package_id = 4;                      ///< package
+    string operation_symbol = 5;                ///< operation symbol
+    int64 value = 6;                            ///< amount
+}
+
+message Log
+{
+    uint64 id = 1;                              ///< identifier
+    uint64 dt = 2;                              ///< modification date & time
+    User user = 3;                              ///< user
+    Package package = 4;                        ///< package
+    Card card = 5;                              ///< card
+    Operation operation = 6;                    ///< operation
+    int64 value = 7;                            ///< amount
+}
+
+// Operation log
+message JournalResponse
+{
+    OperationResponse rslt = 1;                 ///< count
+    repeated Log log = 2;                       ///< records
+}
+
+message SearchCriteria
+{
+    string compareSign = 1;                      ///< =- equal, >=- greatr or equal,..
+    Card card = 2;                               ///< e.g. 100
+}
+
+message List
+{
+    uint64 offset = 1;                           ///< 0..
+    uint64 size = 2;                             ///< e.g. 100
+}
+
+// Requests
+
+message LoginRequest
+{
+    User user = 1;                          ///< user credentials
+}
+
+// Responses
+
+message LoginResponse
+{
+    User user = 1;                          ///< returns token
+    bool success = 2;
+    uint64 version = 3;                     ///< service version
+    string version_name = 4;                ///< service version name
+}
+
+message CardResponse 
+{
+    repeated CardNPropetiesPackages cards = 3;  ///< dataset
+}
+
+message OperationResponse
+{
+    int32 code = 1;
+    uint64 id = 2;
+    string description = 3;
+    uint64 count = 4;
+    uint64 sum = 5;
+}
+
+// Requests
+message ChPropertyTypeRequest
+{
+    User user = 1;
+    string operationSymbol = 2;
+    PropertyType value = 3;
+}
+
+message ChCardRequest
+{
+    User user = 1;
+    string operationSymbol = 2;
+    Card value = 3;
+    repeated Property properties = 4;
+    repeated Package packages = 5;
+    uint64 package_id = 6;  // if 0, all
+}
+
+message ChBoxRequest
+{
+    User user = 1;
+    string operationSymbol = 2;
+    Box value = 3;
+}
+
+message CardQueryRequest
+{
+    User user = 1;
+    string query = 2;
+    string measure_symbol = 3;
+    List list = 4;
+}
+
+message CardQueryResponse
+{
+    OperationResponse rslt = 1;
+    CardResponse cards = 2;
+}
+
+message DictionariesRequest
+{
+    int32 locale_id = 1;
+    int32 flags = 2;
+}
+
+message DictionariesResponse
+{
+    repeated Operation operation = 1;
+    repeated Symbol symbol = 2;
+    repeated PropertyType property_type = 3;
+}
+
+message PropertyRequest
+{
+    string property_type_name = 1;
+    string value = 2;
+}
+
+message CardRequest
+{
+    User user = 1;
+    // what to do
+    string operation_symbol = 2;
+    // search criterias
+    uint64 id = 3;  // usually I dont know id, but..
+    string symbol_name = 4;
+    string name = 5;
+    uint64 nominal = 6;
+    repeated PropertyRequest properties = 7;
+    // in which box
+    uint64 box = 8;
+    // quantity
+    uint64 qty = 9;
+}
+
+message BoxRequest
+{
+    User user = 1;
+    uint64 start = 2;
+    uint32 depth = 3;
+    List list = 4;
+}
+
+message ExcelFile
+{
+    string name = 1;
+    bytes content = 2;
+}
+
+message ImportExcelRequest
+{
+    User user = 1;
+    string symbol = 2;
+    uint64 prefix_box = 3; // first box, e.g. 219
+    bool number_in_filename = 4;
+    string operation = 5;
+    repeated ExcelFile file = 6;
+}
+
+message ExportExcelRequest
+{
+    User user = 1;
+    string query = 2;
+    string symbol_name = 3;
+}
+
+message ExportExcelResponse
+{
+    repeated ExcelFile file = 1;
+}
+
+message BoxResponse
+{
+    OperationResponse rslt = 1;                 ///< count
+    repeated Box box = 2;
+}
+
+message ServiceSettings
+{
+    uint64 id = 1;                              ///< identifier
+    string name = 2;
+    string addr = 3;
+    uint32 port = 4;
+    string last_component_symbol = 5;
+    uint64 last_box = 6;
+    string last_query = 7;
+    bool number_in_filename = 8;
+    string last_excel_file = 9;
+    string last_excel_dir = 10;
+    uint64 last_import_box = 11;
+    bool show_dialog_on_import_finish = 12;
+}
+
+message Settings
+{
+    User user = 1;
+    repeated ServiceSettings service = 2;
+}
+
+message UserRequest
+{
+    User user = 1;
+    string operationSymbol = 2; // +, -, =
+    User value = 3;
+    List list = 4;
+}
+
+message UserResponse
+{
+    repeated User user = 1;
+}
+
+message GroupRequest
+{
+    User user = 1;
+    string operationSymbol = 2; // +, -, =
+    Group value = 3;
+}
+
+message GroupUserRequest
+{
+    User user = 1;
+    string operationSymbol = 2; // +, -, =
+    GroupUser value = 3;
+}
+
+message GetItemRequest
+{
+    User user = 1;
+    uint64 id = 2;
+}
+
+message JournalRequest
+{
+    User user = 1;
+    List list = 2;
+}
+
+// ------------ RPC -------------
+
+service Rcr
+{
+    rpc login(LoginRequest) returns (LoginResponse) {}
+    rpc getDictionaries(DictionariesRequest) returns (DictionariesResponse) {}
+    rpc getSettings(Settings) returns (Settings) {}
+    rpc setSettings(Settings) returns (Settings) {}
+
+    rpc chPropertyType(ChPropertyTypeRequest) returns (OperationResponse) {}
+    rpc getCard(GetItemRequest) returns (CardNPropetiesPackages) {}
+    rpc chCard(ChCardRequest) returns (OperationResponse) {}
+    rpc chBox(ChBoxRequest) returns (OperationResponse) {}
+
+    rpc cardQuery(CardQueryRequest) returns (CardQueryResponse) {}
+    rpc cardPush(stream CardRequest) returns (OperationResponse) {}
+    rpc getBox(BoxRequest) returns (BoxResponse) {}
+    //
+    rpc lsUser(UserRequest) returns (UserResponse) {}
+    rpc chUser(UserRequest) returns (OperationResponse) {}
+    //
+    rpc chGroup(GroupRequest) returns (OperationResponse) {}
+    //
+    rpc chGroupUser(GroupUserRequest) returns (OperationResponse) {}
+    //
+    rpc importExcel(ImportExcelRequest) returns (OperationResponse) {}
+    //
+    rpc exportExcel(ExportExcelRequest) returns (ExportExcelResponse) {}
+    //
+    rpc lsJournal(JournalRequest) returns (JournalResponse) {}
+}
